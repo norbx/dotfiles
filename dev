@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Script to start development environment in iTerm2
+# Opens 3 tabs in ~/Documents/jeancaisse directory
+
+PROJECT_DIR="$HOME/Documents/jeancaisse"
+
+osascript <<EOF
+tell application "iTerm"
+    -- Create new window
+    create window with default profile
+    
+    tell current session of current window
+        -- First tab: Rails server
+        write text "cd $PROJECT_DIR && PRY=1 bin/rails s"
+    end tell
+    
+    -- Create second tab
+    tell current window
+        create tab with default profile
+        tell current session
+            write text "cd $PROJECT_DIR && PRY=1 bin/sidekiq"
+        end tell
+    end tell
+    
+    -- Create third tab
+    tell current window
+        create tab with default profile
+        tell current session
+            write text "cd $PROJECT_DIR && yarn start"
+        end tell
+    end tell
+    
+    -- Focus on first tab
+    tell current window
+        select tab 1
+    end tell
+    
+    -- Bring iTerm to front
+    activate
+end tell
+EOF
