@@ -1,0 +1,15 @@
+#!/bin/bash
+
+echo "Running rubocop..."
+
+bin/rubocop
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Commit rejected: rubocop found issues"
+  echo "Fix the issues above or run 'bin/rubocop -a' to auto-correct"
+  exit 1
+fi
+
+echo "✅ rubocop passed"
+exit 0
