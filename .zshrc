@@ -19,5 +19,3 @@ ZSH_CUSTOM=$HOME/my_customizations
 
 alias gck='git checkout'
 alias gs='git status'
-
-[[ -f ~/.zshrc.pennylane ]] && source $HOME/.zshrc.pennylane # Load work specific config
