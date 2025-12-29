@@ -15,7 +15,6 @@ zstyle ':omz:update' mode auto      # update automatically without asking
 source $ZSH/oh-my-zsh.sh
 
 # Global configuration
-ZSH_CUSTOM=$HOME/my_customizations
 
 alias gck='git checkout'
 alias gs='git status'
