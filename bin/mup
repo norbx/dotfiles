@@ -1,0 +1,50 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+  echo "Usage: mup VERSION1 [VERSION2 ...]"
+  echo "Example: mup 20260119130703 20260122113147"
+  exit 1
+fi
+
+declare -a passed=()
+declare -a failed=()
+
+for version in "$@"; do
+  echo "Running migration $version (development)..."
+  if bin/rails db:migrate:up:primary VERSION="$version" 2>&1; then
+    passed+=("$version (development)")
+  else
+    failed+=("$version (development)")
+  fi
+
+  echo "Running migration $version (test)..."
+  if RAILS_ENV=test bin/rails db:migrate:up:primary VERSION="$version" 2>&1; then
+    passed+=("$version (test)")
+  else
+    failed+=("$version (test)")
+  fi
+done
+
+echo ""
+echo "========================================="
+echo "Summary:"
+echo "========================================="
+
+if [ ${#passed[@]} -gt 0 ]; then
+  echo "✓ Passed (${#passed[@]}):"
+  for item in "${passed[@]}"; do
+    echo "  - $item"
+  done
+fi
+
+if [ ${#failed[@]} -gt 0 ]; then
+  echo ""
+  echo "✗ Failed (${#failed[@]}):"
+  for item in "${failed[@]}"; do
+    echo "  - $item"
+  done
+  exit 1
+fi
+
+echo ""
+echo "All migrations completed successfully!"

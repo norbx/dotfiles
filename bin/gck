@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+  git branch --sort=-committerdate | fzf | xargs git checkout
+elif [ "$1" = "-b" ]; then
+  if [ $# -lt 2 ]; then
+    echo "Usage: gck -b <branch-name>"
+    exit 1
+  fi
+  git checkout -b "$2"
+else
+  git checkout "$@"
+fi
