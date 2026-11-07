@@ -1,0 +1,101 @@
+#!/bin/bash
+set -u
+
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+file="${1:-}"
+line="${2:-}"
+cwd="${3:-$PWD}"
+
+[ -z "$file" ] && exit 1
+
+if [[ "$file" =~ ^file:// ]]; then
+  file="${file#file://}"
+  file="${file#localhost}"
+  file="$(printf '%b' "${file//%/\\x}")"
+fi
+
+if [[ -z "$line" && "$file" =~ ^(.*):([0-9]+)(:[0-9]+)?$ ]]; then
+  file="${BASH_REMATCH[1]}"
+  line="${BASH_REMATCH[2]}"
+fi
+[[ "$line" =~ ^[0-9]+$ ]] || line=0
+
+[[ "$file" = /* ]] || file="$cwd/$file"
+
+if [ -d "$file" ]; then
+  dir="$file"
+else
+  dir="$(dirname "$file")"
+fi
+root="$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null || echo "$dir")"
+
+best_socket=""
+best_tty=""
+best_len=-1
+socket_dir="${TMPDIR:-/tmp/}nvim.${USER}"
+while IFS= read -r socket; do
+  pid="$(nvim --server "$socket" --remote-expr 'getpid()' 2>/dev/null)" || continue
+  [[ "$pid" =~ ^[0-9]+$ ]] || continue
+  tty="$(ps -o tty= -p "$pid" | tr -d ' ')"
+  [[ -z "$tty" || "$tty" = "??" ]] && continue
+  server_cwd="$(nvim --server "$socket" --remote-expr 'getcwd()' 2>/dev/null)"
+  len=0
+  case "$file/" in
+    "$server_cwd"/*) len=${#server_cwd} ;;
+  esac
+  if (( len > best_len )); then
+    best_len=$len
+    best_socket="$socket"
+    best_tty="/dev/$tty"
+  fi
+done < <(find "$socket_dir" -type s 2>/dev/null)
+
+if [ -n "$best_socket" ]; then
+  escaped="${file//\'/\'\'}"
+  nvim --server "$best_socket" --remote-expr "RemoteOpen('$escaped', $line)" >/dev/null
+  osascript - "$best_tty" <<'APPLESCRIPT'
+on run argv
+  set targetTty to item 1 of argv
+  tell application "iTerm2"
+    repeat with w in windows
+      repeat with t in tabs of w
+        repeat with s in sessions of t
+          if tty of s is targetTty then
+            select w
+            tell t to select
+            tell s to select
+            activate
+            return
+          end if
+        end repeat
+      end repeat
+    end repeat
+  end tell
+end run
+APPLESCRIPT
+  exit 0
+fi
+
+cmd="cd $(printf '%q' "$root") && nvim"
+(( line > 0 )) && cmd="$cmd +$line"
+cmd="$cmd $(printf '%q' "$file")"
+
+osascript - "$cmd" <<'APPLESCRIPT'
+on run argv
+  set shellCommand to item 1 of argv
+  tell application "iTerm2"
+    if (count of windows) is 0 then
+      set newWindow to (create window with default profile)
+      set newSession to current session of newWindow
+    else
+      tell current window
+        set newTab to (create tab with default profile)
+        set newSession to current session of newTab
+      end tell
+    end if
+    tell newSession to write text shellCommand
+    activate
+  end tell
+end run
+APPLESCRIPT
