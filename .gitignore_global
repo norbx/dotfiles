@@ -2,3 +2,5 @@
 # git config --global core.excludesfile ~/.local/dotfiles/.gitignore_global
 
 .vscode/tasks.json
+**/.scripts/**/*
+**/custom_scripts.rb
