@@ -9,11 +9,9 @@ ZSH_THEME="robbyrussell"
 CASE_SENSITIVE="true"
 HYPHEN_INSENSITIVE="true"
 COMPLETION_WAITING_DOTS="true"
-
-zstyle ':omz:update' mode auto      # autoupdate, no asking
+EDITOR="code --wait"
 
 source $ZSH/oh-my-zsh.sh
-
 
 ## autocompletion
 autoload -Uz compinit
@@ -43,7 +41,10 @@ setopt always_to_end
 zstyle ':completion:*' menu select # select completions with arrow keys
 zstyle ':completion:*' group-name '' # group results by category
 zstyle ':completion:::::' completer _expand _complete _ignored _approximate # enable approximate matches for completio
+zstyle ':omz:update' mode auto      # update automatically without asking
 
 # Global config
+eval "$(direnv hook zsh)"
 
+# Global configuration
 alias gs='git status'
